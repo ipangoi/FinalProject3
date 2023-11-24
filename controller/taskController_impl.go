@@ -82,7 +82,7 @@ func (s *TaskHandlerImpl) TaskGet(c *gin.Context) {
 	var db = database.GetDB()
 	contentType := helper.GetContentType(c)
 
-	var Task []entity.Task
+	Task :=entity.Task{}
 
 	if contentType == appJSON {
 		c.ShouldBindJSON(&Task)
@@ -102,7 +102,20 @@ func (s *TaskHandlerImpl) TaskGet(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, Task)
+	c.JSON(http.StatusCreated, gin.H{
+		"id":          Task.ID,
+		"title":       Task.Title,
+		"status":      Task.Status,
+		"description": Task.Description,
+		"user_id":     Task.UserID,
+		"category_id": Task.CategoryID,
+		"created_at":  Task.CreatedAt,
+		"User": gin.H{
+			"id":		Task.UserID,
+			"email":	Task.User.Email,
+			"full_name":Task.User.Full_Name,
+		},
+	})
 }
 
 func (s *TaskHandlerImpl) TaskUpdate(c *gin.Context) {
@@ -135,7 +148,98 @@ func (s *TaskHandlerImpl) TaskUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, Task)
+	c.JSON(http.StatusOK, gin.H{
+		"id":          Task.ID,
+		"title":       Task.Title,
+		"description": Task.Description,
+		"status":      Task.Status,
+		"user_id":     Task.UserID,
+		"category_id": Task.CategoryID,
+		"updated_at":  Task.UpdatedAt,
+
+	})
+}
+
+func (s *TaskHandlerImpl) TaskStatusUpdate(c *gin.Context) {
+	var db = database.GetDB()
+	contentType := helper.GetContentType(c)
+	_, _ = db, contentType
+
+	Task := entity.Task{}
+
+	taskID, _ := strconv.Atoi(c.Param("taskID"))
+
+	if contentType == appJSON {
+		c.ShouldBindJSON(&Task)
+	} else {
+		c.ShouldBind(&Task)
+	}
+
+	Task.ID = uint(taskID)
+
+	err := db.Model(&Task).Where("id = ?", taskID).Updates(
+		entity.Task{
+			Status: Task.Status,}).Error
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          Task.ID,
+		"title":       Task.Title,
+		"description": Task.Description,
+		"status":      Task.Status,
+		"user_id":     Task.UserID,
+		"category_id": Task.CategoryID,
+		"updated_at":  Task.UpdatedAt,
+
+	})
+}
+
+func (s *TaskHandlerImpl) TaskCategoryUpdate(c *gin.Context) {
+	var db = database.GetDB()
+	contentType := helper.GetContentType(c)
+	_, _ = db, contentType
+
+	Task := entity.Task{}
+
+	taskID, _ := strconv.Atoi(c.Param("taskID"))
+
+	if contentType == appJSON {
+		c.ShouldBindJSON(&Task)
+	} else {
+		c.ShouldBind(&Task)
+	}
+
+	Task.ID = uint(taskID)
+
+	err := db.Model(&Task).Where("id = ?", taskID).Updates(
+		entity.Task{
+			CategoryID: Task.CategoryID,}).Error
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":          Task.ID,
+		"title":       Task.Title,
+		"description": Task.Description,
+		"status":      Task.Status,
+		"user_id":     Task.UserID,
+		"category_id": Task.CategoryID,
+		"updated_at":  Task.UpdatedAt,
+
+	})
 }
 
 func (s *TaskHandlerImpl) TaskDelete(c *gin.Context) {

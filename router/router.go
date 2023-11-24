@@ -29,7 +29,9 @@ func StartApp() *gin.Engine {
 		categoryRouter.GET("/get", controller.NewCategoryHandlerImpl().CategoryGet)
 		categoryRouter.PATCH("/update/:categoryID", controller.NewCategoryHandlerImpl().CategoryUpdate)
 		categoryRouter.DELETE("/delete/:categoryID", controller.NewCategoryHandlerImpl().CategoryDelete)
+		
 	}
+
 
 	taskRouter := r.Group("/task")
 	{
@@ -38,6 +40,8 @@ func StartApp() *gin.Engine {
 		taskRouter.GET("/get", controller.NewTaskHandlerImpl().TaskGet)
 		taskRouter.PUT("/update/:taskID", controller.NewTaskHandlerImpl().TaskUpdate)
 		taskRouter.DELETE("/delete/:taskID", controller.NewTaskHandlerImpl().TaskDelete)
+		taskRouter.PATCH("/update-status/:taskID", controller.NewTaskHandlerImpl().TaskStatusUpdate)
+		taskRouter.PATCH("/update-category/:taskID", controller.NewTaskHandlerImpl().TaskCategoryUpdate)
 	}
 
 	return r

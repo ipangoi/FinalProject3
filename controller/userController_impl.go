@@ -122,7 +122,12 @@ func (s *UserHandlerImpl) UserUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, gin.H{
+		"id":         user.ID,
+		"full_name":  user.Full_Name,
+		"email":      user.Email,
+		"updated_at": user.UpdatedAt,
+	})
 }
 
 func (s *UserHandlerImpl) UserDelete(c *gin.Context) {

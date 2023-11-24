@@ -49,7 +49,7 @@ func (s *CategoryHandlerImpl) CategoryGet(c *gin.Context) {
 	var db = database.GetDB()
 	contentType := helper.GetContentType(c)
 
-	var Category []entity.Category
+	Category := entity.Category{}
 
 	if contentType == appJSON {
 		c.ShouldBindJSON(&Category)
@@ -68,6 +68,7 @@ func (s *CategoryHandlerImpl) CategoryGet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, Category)
+	
 }
 
 func (s *CategoryHandlerImpl) CategoryUpdate(c *gin.Context) {
@@ -99,7 +100,11 @@ func (s *CategoryHandlerImpl) CategoryUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, category)
+	c.JSON(http.StatusOK, gin.H{
+		"id":		category.ID,
+		"type":		category.Type,
+		"updated_at":	category.UpdatedAt,
+	})
 }
 
 func (s *CategoryHandlerImpl) CategoryDelete(c *gin.Context) {

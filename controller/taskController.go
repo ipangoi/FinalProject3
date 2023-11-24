@@ -7,4 +7,6 @@ type TaskHandler interface {
 	TaskGet(*gin.Context)
 	TaskUpdate(*gin.Context)
 	TaskDelete(*gin.Context)
+	TaskStatusUpdate(*gin.Context)
+	TaskCategoryUpdate(*gin.Context)
 }
