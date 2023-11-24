@@ -17,7 +17,7 @@ func StartApp() *gin.Engine {
 		userRouter.POST("/login", controller.NewUserHandlerImpl().UserLogin)
 
 		userRouter.Use(middleware.Authentication())
-		userRouter.PUT("/:userID", middleware.UserAuthorization(), controller.NewUserHandlerImpl().UserUpdate)
+		userRouter.PUT("/update-account", controller.NewUserHandlerImpl().UserUpdate)
 
 		userRouter.DELETE("/:userID", middleware.UserAuthorization(), controller.NewUserHandlerImpl().UserDelete)
 	}
