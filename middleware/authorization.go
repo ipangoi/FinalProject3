@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -32,5 +33,31 @@ func UserAuthorization() gin.HandlerFunc {
 			return
 		}
 
+	}
+}
+
+func AdminAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var db = database.GetDB()
+		userData := c.MustGet("userData").(jwt.MapClaims)
+
+		userID := uint(userData["id"].(float64))
+
+		User := entity.User{}
+
+		err := db.Where("id = ?", userID).Find(&User).Error
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Bad Request",
+				"message": err.Error(),
+			})
+			return
+		}
+
+		if User.Role != "admin" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
+			return
+		}
+		c.Next()
 	}
 }

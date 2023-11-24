@@ -29,6 +29,7 @@ func (s *TaskHandlerImpl) TaskCreate(c *gin.Context) {
 	userID := uint(userData["id"].(float64))
 	categoryID := uint(categoryData["id"].(uint))
 	Task := entity.Task{}
+	Task.Status = false
 
 	rawJSON, err := c.GetRawData()
 	if err != nil {
@@ -57,6 +58,14 @@ func (s *TaskHandlerImpl) TaskCreate(c *gin.Context) {
 	Task.UserID = userID
 	Task.CategoryID = categoryID
 
+	if err := Task.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	err = db.Debug().Create(&Task).Error
 
 	if err != nil {
@@ -82,7 +91,7 @@ func (s *TaskHandlerImpl) TaskGet(c *gin.Context) {
 	var db = database.GetDB()
 	contentType := helper.GetContentType(c)
 
-	Task :=entity.Task{}
+	Task := entity.Task{}
 
 	if contentType == appJSON {
 		c.ShouldBindJSON(&Task)
@@ -111,18 +120,20 @@ func (s *TaskHandlerImpl) TaskGet(c *gin.Context) {
 		"category_id": Task.CategoryID,
 		"created_at":  Task.CreatedAt,
 		"User": gin.H{
-			"id":		Task.UserID,
-			"email":	Task.User.Email,
-			"full_name":Task.User.Full_Name,
+			"id":        Task.UserID,
+			"email":     Task.User.Email,
+			"full_name": Task.User.Full_Name,
 		},
 	})
 }
 
 func (s *TaskHandlerImpl) TaskUpdate(c *gin.Context) {
 	var db = database.GetDB()
+	userData := c.MustGet("userData").(jwt.MapClaims)
 	contentType := helper.GetContentType(c)
 	_, _ = db, contentType
 
+	userID := uint(userData["id"].(float64))
 	Task := entity.Task{}
 
 	taskID, _ := strconv.Atoi(c.Param("taskID"))
@@ -134,6 +145,7 @@ func (s *TaskHandlerImpl) TaskUpdate(c *gin.Context) {
 	}
 
 	Task.ID = uint(taskID)
+	Task.UserID = userID
 
 	err := db.Model(&Task).Where("id = ?", taskID).Updates(
 		entity.Task{
@@ -148,15 +160,23 @@ func (s *TaskHandlerImpl) TaskUpdate(c *gin.Context) {
 		return
 	}
 
+	updatedTask := entity.Task{}
+	if err := db.Preload("Category").First(&updatedTask, taskID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"id":          Task.ID,
 		"title":       Task.Title,
 		"description": Task.Description,
 		"status":      Task.Status,
 		"user_id":     Task.UserID,
-		"category_id": Task.CategoryID,
+		"category_id": updatedTask.Category.ID,
 		"updated_at":  Task.UpdatedAt,
-
 	})
 }
 
@@ -177,9 +197,7 @@ func (s *TaskHandlerImpl) TaskStatusUpdate(c *gin.Context) {
 
 	Task.ID = uint(taskID)
 
-	err := db.Model(&Task).Where("id = ?", taskID).Updates(
-		entity.Task{
-			Status: Task.Status,}).Error
+	err := db.Model(&Task).Where("id = ?", taskID).Update("status", Task.Status).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -189,24 +207,34 @@ func (s *TaskHandlerImpl) TaskStatusUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":          Task.ID,
-		"title":       Task.Title,
-		"description": Task.Description,
-		"status":      Task.Status,
-		"user_id":     Task.UserID,
-		"category_id": Task.CategoryID,
-		"updated_at":  Task.UpdatedAt,
+	updatedTask := entity.Task{}
+	if err := db.Preload("Category").First(&updatedTask, taskID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": err.Error(),
+		})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"id":          updatedTask.ID,
+		"title":       updatedTask.Title,
+		"description": updatedTask.Description,
+		"status":      updatedTask.Status,
+		"user_id":     updatedTask.UserID,
+		"category_id": updatedTask.CategoryID,
+		"updated_at":  updatedTask.UpdatedAt,
 	})
 }
 
 func (s *TaskHandlerImpl) TaskCategoryUpdate(c *gin.Context) {
 	var db = database.GetDB()
+	categoryData := c.MustGet("categoryData").(map[string]interface{})
 	contentType := helper.GetContentType(c)
 	_, _ = db, contentType
 
 	Task := entity.Task{}
+	categoryID := uint(categoryData["id"].(uint))
 
 	taskID, _ := strconv.Atoi(c.Param("taskID"))
 
@@ -217,10 +245,9 @@ func (s *TaskHandlerImpl) TaskCategoryUpdate(c *gin.Context) {
 	}
 
 	Task.ID = uint(taskID)
+	Task.CategoryID = categoryID
 
-	err := db.Model(&Task).Where("id = ?", taskID).Updates(
-		entity.Task{
-			CategoryID: Task.CategoryID,}).Error
+	err := db.Model(&Task).Where("id = ?", taskID).Update("category_id", Task.CategoryID).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -230,15 +257,23 @@ func (s *TaskHandlerImpl) TaskCategoryUpdate(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"id":          Task.ID,
-		"title":       Task.Title,
-		"description": Task.Description,
-		"status":      Task.Status,
-		"user_id":     Task.UserID,
-		"category_id": Task.CategoryID,
-		"updated_at":  Task.UpdatedAt,
+	updatedTask := entity.Task{}
+	if err := db.Preload("Category").First(&updatedTask, taskID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal Server Error",
+			"message": err.Error(),
+		})
+		return
+	}
 
+	c.JSON(http.StatusOK, gin.H{
+		"id":          updatedTask.ID,
+		"title":       updatedTask.Title,
+		"description": updatedTask.Description,
+		"status":      updatedTask.Status,
+		"user_id":     updatedTask.UserID,
+		"category_id": updatedTask.CategoryID,
+		"updated_at":  updatedTask.UpdatedAt,
 	})
 }
 

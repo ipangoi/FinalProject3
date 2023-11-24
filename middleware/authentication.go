@@ -60,13 +60,13 @@ func TaskAuthentication() gin.HandlerFunc {
 		if !ok || categoryID != float64(uint64(categoryID)) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error":   "Bad Request",
-				"message": "'photo_id' must be a non-negative integer",
+				"message": "'category_id' must be a non-negative integer",
 			})
 			c.Abort()
 			return
 		}
 
-		c.Set("photoData", map[string]interface{}{"id": uint(categoryID)})
+		c.Set("categoryData", map[string]interface{}{"id": uint(categoryID)})
 
 		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(rawJSON))
 

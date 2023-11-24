@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,12 +27,22 @@ func (s *UserHandlerImpl) UserRegister(c *gin.Context) {
 	_, _ = db, contentType
 
 	user := entity.User{}
+	user.Role = "member"
 
 	if contentType == appJSON {
 		c.ShouldBindJSON(&user)
 	} else {
 		c.ShouldBind(&user)
 	}
+
+	if err := user.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	err := db.Debug().Create(&user).Error
 
 	if err != nil {
@@ -94,12 +105,12 @@ func (s *UserHandlerImpl) UserLogin(c *gin.Context) {
 
 func (s *UserHandlerImpl) UserUpdate(c *gin.Context) {
 	var db = database.GetDB()
+	userData := c.MustGet("userData").(jwt.MapClaims)
 	contentType := helper.GetContentType(c)
 	_, _ = db, contentType
 
+	userID := uint(userData["id"].(float64))
 	user := entity.User{}
-
-	userID, _ := strconv.Atoi(c.Param("userID"))
 
 	if contentType == appJSON {
 		c.ShouldBindJSON(&user)

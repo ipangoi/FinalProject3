@@ -28,6 +28,15 @@ func (s *CategoryHandlerImpl) CategoryCreate(c *gin.Context) {
 	} else {
 		c.ShouldBind(&category)
 	}
+
+	if err := category.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Bad Request",
+			"message": err.Error(),
+		})
+		return
+	}
+
 	err := db.Debug().Create(&category).Error
 
 	if err != nil {
@@ -68,7 +77,7 @@ func (s *CategoryHandlerImpl) CategoryGet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, Category)
-	
+
 }
 
 func (s *CategoryHandlerImpl) CategoryUpdate(c *gin.Context) {
@@ -88,9 +97,7 @@ func (s *CategoryHandlerImpl) CategoryUpdate(c *gin.Context) {
 
 	category.ID = uint(categoryID)
 
-	err := db.Model(&category).Where("id = ?", categoryID).Updates(
-		entity.Category{
-			Type: category.Type}).Error
+	err := db.Model(&category).Where("id = ?", categoryID).Update("type", category.Type).Error
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -101,9 +108,9 @@ func (s *CategoryHandlerImpl) CategoryUpdate(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":		category.ID,
-		"type":		category.Type,
-		"updated_at":	category.UpdatedAt,
+		"id":         category.ID,
+		"type":       category.Type,
+		"updated_at": category.UpdatedAt,
 	})
 }
 
